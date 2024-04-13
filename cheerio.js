@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
+const mysql = require("mysql2/promise");
 
 async function scrapeData(url) {
   const browser = await puppeteer.launch();
@@ -44,10 +45,76 @@ async function scrapeData(url) {
 
   console.log("Scraped data:");
   console.log(articles);
+  await saveDataToMySQL(articles); // Save the scraped data into MySQL
 
   await browser.close();
 }
 
-scrapeData(
-  "https://www.autodeal.com.ph/cars/search?sort-by=alphabetical&page=1"
-);
+async function saveDataToMySQL(data) {
+  // Create a MySQL connection pool
+  const pool = mysql.createPool({
+    host: "192.168.1.101",
+    user: "root",
+    password: "casaos",
+    database: "continuum",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+
+  try {
+    // Loop through each article data
+    for (const article of data) {
+      // Check if the article already exists in the database
+      const [rows] = await pool.execute(
+        "SELECT COUNT(*) AS count FROM cars WHERE link = ?",
+        [article.link]
+      );
+
+      // Check if rows is iterable and contains data
+      if (Array.isArray(rows) && rows.length > 0) {
+        const count = rows[0].count;
+
+        if (count === 0) {
+          // Article does not exist in the database, insert it
+          await pool.execute(
+            "INSERT INTO cars (link, title, price, brandLink, variants, brandLogoSrc) VALUES (?, ?, ?, ?, ?, ?)",
+            [
+              article.link,
+              article.title,
+              article.price,
+              article.brandLink,
+              article.variants,
+              article.brandLogoSrc,
+            ]
+          );
+          console.log("Inserted article:", article.title);
+        } else {
+          console.log(
+            "Article already exists, skipping insertion:",
+            article.link
+          );
+        }
+      } else {
+        console.log("Error: No rows returned from database query.");
+      }
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  } finally {
+    // Close the connection pool
+    pool.end();
+  }
+}
+
+async function scrapeDataForPages(baseURL, totalPages) {
+  for (let page = 1; page <= totalPages; page++) {
+    const url = `${baseURL}&page=${page}`;
+    await scrapeData(url);
+  }
+}
+
+const baseURL = "https://www.autodeal.com.ph/cars/search?sort-by=alphabetical";
+const totalPages = 17;
+
+scrapeDataForPages(baseURL, totalPages);
