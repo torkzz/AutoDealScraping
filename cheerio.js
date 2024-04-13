@@ -1,7 +1,7 @@
+require("dotenv").config(); // Load environment variables from .env file
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 const mysql = require("mysql2/promise");
-
 async function scrapeData(url) {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
@@ -53,12 +53,12 @@ async function scrapeData(url) {
 async function saveDataToMySQL(data) {
   // Create a MySQL connection pool
   const pool = mysql.createPool({
-    host: "192.168.1.101",
-    user: "root",
-    password: "casaos",
-    database: "continuum",
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
     waitForConnections: true,
-    connectionLimit: 10,
+    connectionLimit: process.env.DB_CONNECTION_LIMIT,
     queueLimit: 0,
   });
 
