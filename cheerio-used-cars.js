@@ -140,7 +140,7 @@ async function saveDataToMySQL(data) {
 }
 
 async function scrapeDataForPages(baseURL, totalPages) {
-  for (let page = 17; page <= totalPages; page++) {
+  for (let page = 1; page <= totalPages; page++) {
     const url = `${baseURL}/page-${page}?sort-by=most-recent`;
     console.log(url);
     await scrapeData(url);
