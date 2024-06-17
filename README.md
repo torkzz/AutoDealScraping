@@ -30,7 +30,8 @@ This script scrapes used car data from AutoDeal's website using Puppeteer and Ch
 
 4. **Run the Script**:
     ```bash
-    node scraper.js
+    node cheerio-used-cars.js
+    node cheerio.js
     ```
 
 ## Script Details
